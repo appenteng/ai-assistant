@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Assistant ✈️</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-plane-departure"></i>
+                <h1>AI Travel Assistant</h1>
+            </div>
+            <div class="nav-links">
+                <a href="#planner"><i class="fas fa-map-marked-alt"></i> Trip Planner</a>
+                <a href="#trips"><i class="fas fa-history"></i> My Trips</a>
+                <a href="#chat"><i class="fas fa-robot"></i> AI Chat</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h2>Plan Your Perfect Trip with AI ✨</h2>
+            <p>Intelligent itinerary planning, cost estimation, and personalized recommendations</p>
+            <button class="cta-button" onclick="scrollToPlanner()">
+                <i class="fas fa-magic"></i> Start Planning
+            </button>
+        </div>
+        <div class="hero-image">
+            <div class="floating-card">
+                <i class="fas fa-plane"></i>
+                <h3>Tokyo, Japan</h3>
+                <p>5 days • $1,250</p>
+            </div>
+            <div class="floating-card">
+                <i class="fas fa-umbrella-beach"></i>
+                <h3>Bali, Indonesia</h3>
+                <p>7 days • $1,800</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Trip Planner -->
+        <section id="planner" class="card planner-section">
+            <h2><i class="fas fa-compass"></i> Plan New Trip</h2>
+            <div class="planner-form">
+                <div class="input-group">
+                    <div class="input-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <input type="text" id="destination" placeholder="Where do you want to go?" value="Tokyo">
+                </div>
+
+                <div class="input-row">
+                    <div class="input-group">
+                        <div class="input-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <input type="number" id="days" placeholder="Days" value="5" min="1" max="30">
+                    </div>
+
+                    <div class="input-group">
+                        <div class="input-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <input type="number" id="budget" placeholder="Budget (optional)" value="2000">
+                    </div>
+                </div>
+
+                <button class="plan-button" onclick="planTrip()">
+                    <i class="fas fa-brain"></i> Generate AI-Powered Plan
+                </button>
+            </div>
+
+            <div id="tripResult" class="result-card" style="display: none;">
+                <!-- Results will appear here -->
+            </div>
+        </section>
+
+        <!-- Recent Trips -->
+        <section id="trips" class="card">
+            <h2><i class="fas fa-history"></i> Recent Trips</h2>
+            <div id="recentTrips" class="trips-grid">
+                <!-- Trips will load here -->
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading trips...
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Chat -->
+        <section id="chat" class="card chat-section">
+            <h2><i class="fas fa-robot"></i> Chat with AI Assistant</h2>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message ai-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            Hello! I'm your AI travel assistant. How can I help you plan your next adventure?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Ask about destinations, packing tips, or anything..."
+                           onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Popular Destinations -->
+        <section class="card">
+            <h2><i class="fas fa-globe-americas"></i> Popular Destinations</h2>
+            <div class="destinations-grid" id="destinationsGrid">
+                <!-- Destinations will load here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>✈️ AI Travel Assistant • Powered by FastAPI & AI • Made with ❤️</p>
+        <div class="footer-links">
+            <a href="#"><i class="fab fa-github"></i> GitHub</a>
+            <a href="/docs" target="_blank"><i class="fas fa-code"></i> API Docs</a>
+            <a href="#"><i class="fas fa-envelope"></i> Contact</a>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
