@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Travel Assistant</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 10px; }
+        input, button { padding: 10px; margin: 5px; }
+        .trip { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🌍 AI Travel Assistant</h1>
+
+    <div class="container">
+        <h2>Plan Your Trip</h2>
+        <input id="destination" placeholder="Destination" />
+        <input id="days" type="number" placeholder="Days" value="3" />
+        <button onclick="planTrip()">Plan Trip</button>
+
+        <div id="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>Recent Trips</h2>
+        <div id="recentTrips"></div>
+    </div>
+
+    <script>
+        async function planTrip() {
+            const destination = document.getElementById('destination').value;
+            const days = document.getElementById('days').value;
+
+            const response = await fetch(`/api/travel/plan?destination=${destination}&days=${days}`);
+            const trip = await response.json();
+
+            document.getElementById('result').innerHTML = `
+                <div class="trip">
+                    <h3>Trip to ${trip.destination}</h3>
+                    <p><strong>Days:</strong> ${trip.days}</p>
+                    <p><strong>Estimated Cost:</strong> $${trip.estimated_cost}</p>
+                    <h4>Itinerary:</h4>
+                    <ul>${trip.itinerary.map(day => `<li>${day}</li>`).join('')}</ul>
+                </div>
+            `;
+
+            loadRecentTrips();
+        }
+
+        async function loadRecentTrips() {
+            const response = await fetch('/api/travel/recent');
+            const data = await response.json();
+
+            document.getElementById('recentTrips').innerHTML =
+                data.trips.map(trip => `
+                    <div class="trip">
+                        <h3>${trip.destination} (${trip.days} days)</h3>
+                        <p>Planned on: ${new Date(trip.created_at).toLocaleDateString()}</p>
+                    </div>
+                `).join('');
+        }
+
+        // Load recent trips on page load
+        loadRecentTrips();
+    </script>
+</body>
+</html>
