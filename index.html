@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Travel Assistant</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        input, button { padding: 10px; margin: 5px; font-size: 16px; }
+        .result { background: white; padding: 15px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 AI Travel Assistant</h1>
+
+    <div class="container">
+        <h2>Chat with AI</h2>
+        <input id="message" placeholder="Ask me anything..." />
+        <button onclick="chat()">Send</button>
+        <div id="chatResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>Plan a Trip</h2>
+        <input id="destination" placeholder="Destination" value="Tokyo" />
+        <input id="days" type="number" value="3" placeholder="Days" />
+        <button onclick="planTrip()">Plan Trip</button>
+        <div id="tripResult" class="result"></div>
+    </div>
+
+    <script>
+        // Update this to your Render URL
+        const API_URL = "https://ai-travel-assistant.onrender.com";
+
+        async function chat() {
+            const message = document.getElementById('message').value;
+            const response = await fetch(`${API_URL}/api/chat?message=${encodeURIComponent(message)}`);
+            const data = await response.json();
+            document.getElementById('chatResult').innerHTML =
+                `<strong>You:</strong> ${data.message}<br>
+                 <strong>AI:</strong> ${data.response}`;
+        }
+
+        async function planTrip() {
+            const destination = document.getElementById('destination').value;
+            const days = document.getElementById('days').value;
+            const response = await fetch(`${API_URL}/api/travel/plan?destination=${destination}&days=${days}`);
+            const data = await response.json();
+
+            let html = `<h3>Trip to ${data.plan.destination}</h3>
+                       <p><strong>Type:</strong> ${data.plan.trip_type}</p>
+                       <p><strong>Cost:</strong> $${data.plan.estimated_cost}</p>
+                       <h4>Itinerary:</h4><ul>`;
+
+            data.plan.itinerary.forEach(day => {
+                html += `<li>${day}</li>`;
+            });
+
+            html += `</ul>`;
+            document.getElementById('tripResult').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
