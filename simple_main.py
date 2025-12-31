@@ -1,76 +1,76 @@
-# simple_main.py - TEMPORARY to get dashboard working
-from fastapi import FastAPI, Request
+# main.py - UPDATED VERSION THAT SERVES FRONTEND TOO
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 import uvicorn
+import os
+import threading
+import webbrowser
+import time
 
-app = FastAPI(title="AI Assistant", version="1.0.0")
+app = FastAPI(title="AI Travel Assistant")
 
-# Mount static files and templates
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Mount frontend folder
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 
-# Simple endpoints for dashboard
+# Serve frontend at root
 @app.get("/")
-async def dashboard(request: Request):
-    """Serve the main dashboard"""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+async def serve_frontend():
+    index_path = os.path.join(frontend_path, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Frontend not found. Please create frontend/index.html"}
+
+
+# Your existing API endpoints
+@app.get("/api/chat")
+def chat(message: str = "Hello"):
+    return {
+        "message": message,
+        "response": f"AI says: I can help you plan trips! You said: '{message}'",
+        "sentiment": {"positive": 0.8, "negative": 0.1, "neutral": 0.1}
+    }
+
+
+@app.get("/api/travel/plan")
+def plan_trip(destination: str = "Paris", days: int = 3, budget: float = 1000):
+    return {
+        "status": "success",
+        "destination": destination,
+        "days": days,
+        "budget": budget,
+        "itinerary": [f"Day {i + 1}: Explore {destination}" for i in range(days)],
+        "estimated_cost": days * 150,
+        "recommendations": ["Try local cuisine", "Visit attractions", "Enjoy!"]
+    }
 
 
 @app.get("/health")
-async def health_check():
+def health_check():
     return {"status": "healthy", "service": "AI Assistant"}
 
 
-# Mock API endpoints for the dashboard
-@app.get("/api/travel/plan-simple")
-async def mock_plan_trip(destination: str = "Paris", days: int = 3, budget: float = 1000):
-    """Mock trip planning for dashboard testing"""
-    return {
-        "status": "success",
-        "plan": {
-            "destination": destination,
-            "days": days,
-            "itinerary": [
-                f"Day 1: Arrive in {destination}, check in, explore city center",
-                f"Day 2: Visit major attractions in {destination}",
-                f"Day 3: Last-minute shopping, depart from {destination}"
-            ],
-            "total_cost": days * 150,
-            "within_budget": (days * 150) <= budget,
-            "cost_breakdown": {
-                "accommodation": days * 60,
-                "food": days * 40,
-                "activities": days * 30,
-                "transportation": days * 20
-            }
-        }
-    }
-
-
-@app.get("/api/chat")
-async def mock_chat(message: str = "Hello"):
-    """Mock chat for dashboard testing"""
-    responses = {
-        "hello": "Hi there! I'm your AI Assistant. How can I help?",
-        "travel": "I can help plan trips! Try the travel planning feature.",
-        "help": "I can assist with trip planning, answer questions, and more!"
-    }
-
-    msg_lower = message.lower()
-    for key, response in responses.items():
-        if key in msg_lower:
-            return {"response": response}
-
-    return {"response": f"I received: '{message}'. How can I assist you?"}
+# Function to open browser automatically
+def open_browser():
+    time.sleep(2)  # Wait for server to start
+    webbrowser.open("http://localhost:8080")
 
 
 if __name__ == "__main__":
-    print("🚀 SIMPLE AI Assistant starting...")
-    print("🌐 Dashboard: http://localhost:8000")
-    print("💬 Mock chat interface available!")
-    print("✈️  Mock trip planner ready!")
-    print("\n⚠️  NOTE: This is a simplified version for testing UI.")
-    print("   To use full features, fix the config errors.")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    port = 8080
+
+    # Start browser in background thread
+    threading.Thread(target=open_browser, daemon=True).start()
+
+    print("🚀 Starting AI Travel Assistant...")
+    print(f"🌐 Frontend: http://localhost:{port}")
+    print(f"🔧 Backend API: http://localhost:{port}/api/chat")
+    print(f"📚 API Docs: http://localhost:{port}/docs")
+    print("----------------------------------------")
+
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)

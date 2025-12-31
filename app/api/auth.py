@@ -1,118 +1,72 @@
-# backend/app/api/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.api.deps import get_db
-from app.schemas.user import UserCreate, UserResponse, Token, TokenRefresh
-from app.services.user_service import UserService
-from app.core.security import SecurityService
-from app.services.email_service import EmailService
+from datetime import timedelta
 
-router = APIRouter()
+from app.core.database import get_db
+from app.schemas.auth import UserCreate, UserResponse, Token, LoginRequest
+from app.services.auth_service import AuthService
+from app.utils.security import create_access_token
+from app.core.config import settings
+
+router = APIRouter(tags=["Authentication"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(
-        user_data: UserCreate,
-        db: Session = Depends(get_db)
-):
-    """Register new user and send verification email"""
-    user = UserService.create_user(db, user_data)
-
-    # Create verification token
-    verification_token = SecurityService.create_access_token(
-        {"sub": str(user.id), "email": user.email},
-        expires_delta=timedelta(hours=24)
-    )
-
-    # Send verification email
-    email_service = EmailService()
-    email_service.send_verification_email(user.email, verification_token)
-
-    return user
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    """Register a new user"""
+    auth_service = AuthService(db)
+    db_user = auth_service.register_user(user)
+    return db_user
 
 
-@router.post("/verify-email")
-async def verify_email(token: str, db: Session = Depends(get_db)):
-    """Verify user's email"""
-    payload = SecurityService.verify_token(token)
-    if not payload:
+@router.post("/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Login and get access token"""
+    auth_service = AuthService(db)
+    user = auth_service.authenticate_user(form_data.username, form_data.password)
+
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = UserService.verify_user_email(db, payload.get("email"))
+    # Create access token
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user(
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(get_db)
+):
+    """Get current user profile"""
+    from app.utils.security import verify_token
+
+    username = verify_token(token)
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    auth_service = AuthService(db)
+    user = auth_service.db.query(User).filter(User.username == username).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
-    return {"message": "Email verified successfully"}
-
-
-@router.post("/login", response_model=Token)
-async def login(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
-):
-    """Login user and return access/refresh tokens"""
-    user = UserService.authenticate_user(
-        db, form_data.username, form_data.password
-    )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
-        )
-
-    # Create tokens
-    access_token = SecurityService.create_access_token(
-        {"sub": str(user.id), "email": user.email}
-    )
-    refresh_token = SecurityService.create_refresh_token(
-        {"sub": str(user.id), "email": user.email}
-    )
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
-
-
-@router.post("/refresh", response_model=Token)
-async def refresh_token(token_data: TokenRefresh):
-    """Refresh access token"""
-    tokens = SecurityService.refresh_access_token(token_data.refresh_token)
-    if not tokens:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
-
-    return {
-        "access_token": tokens[0],
-        "refresh_token": tokens[1],
-        "token_type": "bearer"
-    }
-
-
-@router.post("/forgot-password")
-async def forgot_password(email: str, db: Session = Depends(get_db)):
-    """Request password reset"""
-    user = UserService.get_user_by_email(db, email)
-    if user:
-        # Create reset token
-        reset_token = SecurityService.create_access_token(
-            {"sub": str(user.id), "email": user.email},
-            expires_delta=timedelta(hours=1)
-        )
-
-        # Send reset email
-        email_service = EmailService()
-        email_service.send_password_reset_email(user.email, reset_token)
-
-    # Always return success to prevent email enumeration
-    return {"message": "If email exists, reset instructions sent"}
+    return user

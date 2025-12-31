@@ -1,63 +1,49 @@
-# test_auth.py
-import sys
-import os
+import requests
+import json
 
-sys.path.insert(0, os.getcwd())
+BASE_URL = "http://localhost:8000/api"
 
-print("🧪 Testing Authentication System...")
+print("🔐 Testing Authentication System...")
 
-try:
-    # Test imports
-    from app.models.user import User
-    from app.models.token import Token
-    from app.utils.auth import hash_password, verify_password, validate_email, validate_password
-    from app.core.database import init_db
+# Test 1: Register
+print("\n1. Testing Registration...")
+register_data = {
+    "email": "test@example.com",
+    "username": "testuser",
+    "password": "testpass123",
+    "full_name": "Test User"
+}
 
-    print("✅ All imports successful!")
+response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
+print(f"   Status: {response.status_code}")
+if response.status_code == 200:
+    print(f"   ✅ User registered: {response.json()['username']}")
+else:
+    print(f"   ❌ Error: {response.text}")
 
-    # Test password hashing
-    password = "TestPass123!"
-    hashed = hash_password(password)
-    print(f"✅ Password hashing works: {verify_password(password, hashed)}")
+# Test 2: Login
+print("\n2. Testing Login...")
+login_data = {
+    "username": "testuser",
+    "password": "testpass123"
+}
 
-    # Test email validation
-    emails = ["test@example.com", "invalid-email", "user@domain.co.uk"]
-    for email in emails:
-        is_valid = validate_email(email)
-        print(f"   Email '{email}': {'✅ Valid' if is_valid else '❌ Invalid'}")
+response = requests.post(f"{BASE_URL}/auth/login", data=login_data)
+print(f"   Status: {response.status_code}")
+if response.status_code == 200:
+    token = response.json()["access_token"]
+    print(f"   ✅ Login successful!")
+    print(f"   Token: {token[:50]}...")
+else:
+    print(f"   ❌ Error: {response.text}")
 
-    # Test password validation
-    passwords = [
-        ("weak", "abc"),
-        ("medium", "Password123"),
-        ("strong", "StrongPass123!")
-    ]
-
-    for name, pwd in passwords:
-        result = validate_password(pwd)
-        print(f"   Password '{name}': {result['strength'].upper()}")
-        if result['errors']:
-            print(f"     Errors: {result['errors']}")
-
-    # Initialize database (creates tables)
-    print("\n📦 Initializing database...")
-    init_db()
-    print("✅ Database initialized!")
-
-    print("\n🎉 Authentication system is ready!")
-    print("\nNext steps:")
-    print("1. Run 'python main.py' to start server")
-    print("2. Test endpoints:")
-    print("   - POST /api/auth/register")
-    print("   - POST /api/auth/login")
-    print("   - GET /api/auth/me (with token)")
-
-except ImportError as e:
-    print(f"❌ Import Error: {e}")
-except Exception as e:
-    print(f"❌ Error: {type(e).__name__}: {e}")
-    import traceback
-
-    traceback.print_exc()
-
-input("\nPress Enter to exit...")
+# Test 3: Get Current User
+print("\n3. Testing Get Current User...")
+if 'token' in locals():
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
+    print(f"   Status: {response.status_code}")
+    if response.status_code == 200:
+        print(f"   ✅ User data: {response.json()['username']}")
+    else:
+        print(f"   ❌ Error: {response.text}")

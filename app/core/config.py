@@ -27,3 +27,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Add these to your Settings class:
+secret_key: str = "your-secret-key-change-this-in-production"  # Generate with: openssl rand -hex 32
+algorithm: str = "HS256"
+access_token_expire_minutes: int = 30
